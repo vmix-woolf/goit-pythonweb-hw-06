@@ -102,7 +102,8 @@ def select_10(student_name, teacher_name):
         .all()
     )
 
-# --- Дополнительные запросы ---
+# --- Додаткові запити ---
+
 def select_11():
     return (
         session.query(Teacher.fullname, func.round(func.avg(Grade.grade), 2))
