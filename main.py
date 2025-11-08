@@ -1,30 +1,60 @@
 import argparse
+from sqlalchemy.orm import sessionmaker
+from db import engine
+from models import Teacher, Group, Student, Subject, Grade
 
-# --- Налаштування CLI-парсера ---
-def parse_args():
-    parser = argparse.ArgumentParser(description="Університетська база даних (CLI через argparse)")
+Session = sessionmaker(bind=engine)
+session = Session()
 
-    # Аргумент для дії: create, list, update, remove
-    parser.add_argument(
-        "-a", "--action",
-        required=True,
-        help="Дія: create, list, update, remove"
-    )
+def create_teacher(name):
+    teacher = Teacher(fullname=name)
+    session.add(teacher)
+    session.commit()
+    print(f"✅ Викладача '{name}' створено (id={teacher.id})")
 
-    # Аргумент для моделі: Student, Teacher, Group, Subject, Grade
-    parser.add_argument(
-        "-m", "--model",
-        required=True,
-        help="Модель: Student, Teacher, Group, Subject, Grade"
-    )
+def list_teachers():
+    teachers = session.query(Teacher).all()
+    for t in teachers:
+        print(f"{t.id}. {t.fullname}")
 
-    # Необов’язкові аргументи для додаткових параметрів
-    parser.add_argument("--id", type=int, help="ID запису (для update/remove)")
-    parser.add_argument("-n", "--name", help="Назва або ім'я (для create/update)")
+def update_teacher(id, name):
+    teacher = session.get(Teacher, id)
+    if teacher:
+        teacher.fullname = name
+        session.commit()
+        print(f"Викладача id={id} оновлено на '{name}'")
+    else:
+        print("Викладача не знайдено")
 
-    return parser.parse_args()
+def remove_teacher(id):
+    teacher = session.get(Teacher, id)
+    if teacher:
+        session.delete(teacher)
+        session.commit()
+        print(f"Викладача id={id} видалено")
+    else:
+        print("Викладача не знайдено")
 
+def main():
+    parser = argparse.ArgumentParser(description="University CLI")
+    parser.add_argument("-a", "--action", required=True, help="CRUD action: create, list, update, remove")
+    parser.add_argument("-m", "--model", required=True, help="Model name: Teacher, Group, Student, Subject, Grade")
+    parser.add_argument("--id", type=int, help="Object ID (for update/remove)")
+    parser.add_argument("-n", "--name", help="Name or full name")
+
+    args = parser.parse_args()
+
+    if args.model == "Teacher":
+        if args.action == "create":
+            create_teacher(args.name)
+        elif args.action == "list":
+            list_teachers()
+        elif args.action == "update":
+            update_teacher(args.id, args.name)
+        elif args.action == "remove":
+            remove_teacher(args.id)
+        else:
+            print("Невідома дія")
 
 if __name__ == "__main__":
-    args = parse_args()
-    print("Отримані аргументи:", args)
+    main()

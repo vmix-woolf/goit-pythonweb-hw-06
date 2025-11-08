@@ -1,18 +1,30 @@
 import os
-from dotenv import load_dotenv
+from logging.config import fileConfig
+
 from sqlalchemy import create_engine, pool
 from alembic import context
+from dotenv import load_dotenv
 
-# Імпортуємо базовий клас з моделей
-from models import Base
-
-# Завантажуємо змінні з .env
+# ---- 1. Завантажуємо .env ----
 load_dotenv()
 
-# Конфіг Alembic
+# ---- 2. Імпортуємо базовий клас ----
+from models import Base
+
+# ---- 3. Конфіг Alembic ----
 config = context.config
+
+# ---- 4. Читаємо URL з .env ----
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL не знайдено в .env")
+
 config.set_main_option("sqlalchemy.url", DATABASE_URL)
+
+# ---- 5. Налаштовуємо логування Alembic ----
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
 
@@ -21,7 +33,10 @@ def run_migrations_offline():
     """Запуск у офлайн-режимі (без підключення до БД)."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True, compare_type=True
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        compare_type=True,
     )
 
     with context.begin_transaction():
@@ -34,7 +49,9 @@ def run_migrations_online():
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata, compare_type=True
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
         )
 
         with context.begin_transaction():
@@ -45,4 +62,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-
